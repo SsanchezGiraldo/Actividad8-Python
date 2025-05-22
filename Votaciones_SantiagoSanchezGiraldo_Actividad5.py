@@ -1,0 +1,280 @@
+import tkinter as tk
+from tkinter import messagebox 
+from tkinter import filedialog
+import csv 
+MainWindow = tk.Tk()
+MainWindow.title("Votaciones")
+MainWindow.geometry("800x600") 
+#Hecho por Santiago Sanchez Giraldo
+#---------------Guarda en un archivo los datos de los jurados en csv------------------
+def guardaDatosVotaciones():
+    try:
+        with open("DatosVotaciones.csv", "w", newline="", encoding="utf-8") as archivo:
+            writer = csv.writer(archivo)
+
+            # Datos generales sobre el centro de votación
+            writer.writerow(["------------Centro de Votación-----------\n"])
+            writer.writerow(["Cantidad de Salones", entry_salon.get()])
+            writer.writerow(["Cantidad de Mesas por Salón", entry_mesas.get()])
+            writer.writerow(["Cantidad de Jurados por Mesa", entry_jurados.get()])
+            writer.writerow([])
+
+            # Datos de jurados por mesa
+            writer.writerow(["---------Jurados por Mesa--------\n"])
+            
+            for i, jurados in enumerate(jurados_por_mesa):
+                for jurado in jurados:
+                    writer.writerow([f"Mesa {i+1}", jurado[0], jurado[1], jurado[2], jurado[3]])
+            writer.writerow([])
+
+            # Datos de votantes
+            writer.writerow(["-----------Votantes---------\n"])
+            
+            for v in votantes:
+                writer.writerow([v["nombre"], v["cedula"], v["salon"], v["mesa"]])
+
+        messagebox.showinfo("Guardado", "Los datos fueron guardados exitosamente en 'DatosVotaciones.csv'")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo guardar el archivo: {e}")
+
+##---Abrir el archivo y guardar los datos de los votantes en el archivo csv---
+votantes = []  # Lista global para guardar los votantes
+
+def cargar_votantes():
+    archivo = filedialog.askopenfilename(title="Seleccionar archivo de votantes", filetypes=[("CSV files", "*.csv")])
+    if not archivo:
+        messagebox.showerror("Error", "No se seleccionó ningún archivo.")
+        return
+    try:
+        #utf-8 es para que el archivo se guarde en un formato que soporte caracteres especiales
+        with open(archivo, newline='', encoding='utf-8') as f: #newline es para que que los salts de linea no se guarden como caracteres especiales
+            #La f es para que el archivo se cierre automaticamente al terminar de usarlo y tambien para que no se guarde en la memoria, solo sea temporal
+            lector = csv.reader(f)
+            next(lector, None)
+            votantes.clear()
+            for fila in lector:
+                if len(fila) >= 4:
+                    votantes.append({
+                        "nombre": fila[0],
+                        "cedula": fila[1], 
+                        "salon":fila[2],  
+                        "mesa":  fila[3]  # Se asume que columna 4 indica número de mesa
+                    })
+        messagebox.showinfo("Carga exitosa", "Votantes cargados correctamente.")
+
+    #except es para capturar errores si el usuario no ingresa un valor no deseado.
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
+
+def buscar_votante():
+    cedula=EntryBuscarVotante.get()
+    for votante in votantes:
+        if votante["cedula"] == cedula:
+            messagebox.showinfo("Votante encontrado", f"Nombre: {votante['nombre']}\nCédula: {votante['cedula']}\nSalon: {votante['salon']}\nMesa: {votante['mesa']}")
+            return
+    if cedula =="":
+        messagebox.showerror("Error", "Por favor, ingrese una cédula.")
+
+
+
+            
+
+    
+#---Abrir el archivo y guardar los datos de los jurados en el archivo csv---
+#def Ingresar_Archivo():
+    #el defaultextension es para que el sistema operativo sepa que el archivo es un csv y el filetypes es para que el usuario sepa que tipo de archivo en el buscador de archivos.
+   # archivo_guardar = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")]) 
+   # if not archivo_guardar:
+       # messagebox.showerror("Error", "No se seleccionó ningún archivo.")
+        #return
+    
+    
+        
+#------Guardar centro de votacion-------------------
+
+BotonGuardarCentro= tk.Button(MainWindow, text="Guardar centro de votacion",font=("Arial", 10, "bold"),command= guardaDatosVotaciones)
+BotonGuardarCentro.grid(row=4, column=0, columnspan=2, pady=10)
+
+#------------------Cargar Centro de votacion------------------
+
+BotonCargarVotacion= tk.Button(MainWindow, text="Cargar Centro de votacion",font=("Arial", 10, "bold"))
+BotonCargarVotacion.grid(row=5, column=0, columnspan=2, pady=18)
+
+#----------------Carga los datos de los votantes------------------
+
+BotonCargarVotantes= tk.Button(MainWindow, text="Cargar Datos votantes",font=("Arial", 10, "bold"),command = cargar_votantes)
+BotonCargarVotantes.grid(row=6, column=0, columnspan=2, pady=10)
+
+#------------------Buscar Jurados por cedula------------------
+LabelBuscarJurado = tk.Label(MainWindow, text="Buscar Jurado por Cédula:", font=("Arial", 10, "bold"))
+LabelBuscarJurado.grid(row=7, column=0, sticky='e', padx=10, pady=5)  #El sticky es para que el texto quede alineado a la derecha
+
+EntryBuscarJurado = tk.Entry(MainWindow)
+EntryBuscarJurado.grid(row=7, column=1, padx=5, pady=5)
+
+botonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"))
+botonBuscarJurado.grid(row=7, column=2, padx=5, pady=5)
+#------------------Buscar Votantes por cedula------------------
+LabelBuscarVotante = tk.Label(MainWindow, text="Buscar Votante por Cédula:", font=("Arial", 10, "bold"))
+LabelBuscarVotante.grid(row=8, column=0, sticky='e', padx=10, pady=5) #El sticky es para que el texto quede alineado a la derecha
+
+EntryBuscarVotante = tk.Entry(MainWindow)
+EntryBuscarVotante.grid(row=8, column=1, padx=5, pady=5)
+
+BotonBuscarVotante = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_votante)
+BotonBuscarVotante.grid(row=8, column=2, padx=5, pady=5)
+
+
+# ------------------ Lista de listas para guardar jurados por mesa ------------------
+# Cada sublista representa una mesa, y contiene listas con los datos de los jurados
+jurados_por_mesa = []  
+
+# ------------------ Contenedor donde se mostrarán los salones ------------------
+ContenedorSalon = tk.Frame(MainWindow)
+ContenedorSalon.grid(row=14, column=0, columnspan=2, pady=20)
+
+# ------------------ Función para mostrar jurados de una mesa específica ------------------
+
+def mostrar_datos_jurados(indice_mesa):
+    jurados = jurados_por_mesa[indice_mesa]
+
+    if not jurados:
+        messagebox.showerror("Error", "No hay jurados registrados para esta mesa.")
+        return
+
+    # Calcular el salón y número de mesa real
+    total_mesas = int(entry_mesas.get())
+    #salon_num es el número del salón y mesa_num es el número de la mesa
+    #indice_mesa es el índice de la mesa en la lista jurados_por_mesa
+   
+    salon_num = (indice_mesa // total_mesas) + 1
+    mesa_num = (indice_mesa % total_mesas) + 1  #total_mesas es el número total de mesas por salón
+
+    SalidaTexto = ""
+
+    for i, jurado in enumerate(jurados):
+        SalidaTexto += f"Jurado #{i+1}:\nNombre: {jurado[0]}\nCédula: {jurado[1]}\nTeléfono: {jurado[2]}\nDirección: {jurado[3]}\n\n"
+
+    nombre_mesa = f"mesa {mesa_num}"
+    # Filtrar votantes por mesa Y salón
+    votantes_en_mesa = [v for v in votantes 
+                        if v["mesa"].strip().lower() == nombre_mesa 
+                        and v["salon"].strip().lower() == f"salon {salon_num}"]
+
+    if not votantes_en_mesa:
+        SalidaTexto += "--- No hay votantes asignados a esta mesa ---"
+    else:
+        SalidaTexto += "--- Votantes ---\n"
+        for v in votantes_en_mesa:
+            SalidaTexto += f"Nombre: {v['nombre']}\nCédula: {v['cedula']}\n\n"
+
+    messagebox.showinfo(f"Datos del Salón {salon_num} - Mesa {mesa_num}", SalidaTexto)
+
+# ------------------ Función para guardar datos del jurado ------------------
+def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice de la mesa para guardar los datos de la mesa correcta
+    Datos_Guardados = []
+    for entry in entradas:
+        if entry.get() == "":
+            messagebox.showerror("Error", "Por favor, complete todos los campos.")
+            return 
+
+    for entry in entradas:
+        Datos_Guardados.append(entry.get()) 
+
+    jurados_por_mesa[indice_mesa].append(Datos_Guardados)  #Se guarda en la lista correspondiente 
+
+    label = tk.Label(Frame_Formulario, text="Los datos han sido guardados correctamente")
+    label.pack(pady=10)
+
+# ------------------ Formulario de jurado ------------------
+def formulario_Jurado(indice_mesa):  #recibe el índice de la mesa
+    Frame_Formulario = tk.Toplevel(MainWindow)
+    Frame_Formulario.title(f"Formulario Jurado - Mesa {indice_mesa + 1}")
+    Frame_Formulario.geometry("300x400")
+
+    campos = ["Nombre", "Cédula", "Teléfono", "Dirección"]
+    entradas = [] 
+
+    for campo in campos:
+        #Escoge cada campo para poder que aparezca en el formulario
+        #label es el texto que aparece en el formulario
+        label = tk.Label(Frame_Formulario, text=f"{campo}:")
+        label.pack()
+        entryF = tk.Entry(Frame_Formulario)
+        entryF.pack()
+        entradas.append(entryF)
+
+    boton_guardar = tk.Button(Frame_Formulario, text="Guardar", command=lambda: guardar_datos(entradas, Frame_Formulario, indice_mesa))
+    boton_guardar.pack(pady=10)
+
+# ------------------ Genera los salones, mesas y jurados ------------------
+def generar_votacion():
+    #winfo_children() elimina todos los widgets dentro del contenedor
+    # Esto es útil para limpiar el contenedor antes de crear nuevos salones y mesas
+    for Eliminar in ContenedorSalon.winfo_children():
+        Eliminar.destroy()
+    #try sirve para evitar errores si el usuario no ingresa un valor
+    try:
+        total_salones = int(entry_salon.get())
+        total_mesas = int(entry_mesas.get())
+        total_jurados = int(entry_jurados.get())
+    #except sirve para capturar errores si el usuario no ingresa un valor no deseado.
+    except ValueError:
+        messagebox.showerror("Error", "Por favor ingrese solo números enteros válidos.")
+        return  # Termina la función si ocurre error
+
+    jurados_por_mesa.clear()  #limpiamos jurados por mesa
+    total_mesas_totales = total_salones * total_mesas
+    for _ in range(total_mesas_totales):
+        jurados_por_mesa.append([])  #una lista vacia por mesa
+
+    indice_mesa_global = 0  #variable global para guardar el indice de la mesa
+
+    for i in range(total_salones):
+        frame_salon = tk.LabelFrame(ContenedorSalon, text=f"Salón {i+1}", padx=10, pady=10)
+        frame_salon.grid(padx=10, pady=10, column="2", row=i) 
+#
+        for m in range(total_mesas):
+            frame_mesa = tk.Frame(frame_salon)
+            frame_mesa.pack(pady=2)
+
+            #mesa muestra solos sus jurados
+            #index es para guardar el indice de la mesa
+            btn_mesa = tk.Button(frame_mesa, text=f"Mesa {m+1}", width=10, command=lambda index=indice_mesa_global: mostrar_datos_jurados(index))
+            btn_mesa.pack(side="left", padx=5)
+
+            for j in range(total_jurados):
+                # boton para abrir el formulario del jurado cuando le de a la mesa
+                btn_jurado = tk.Button(frame_mesa, text=f"Jurado {j+1}", width=10, command=lambda index=indice_mesa_global: formulario_Jurado(index))
+                btn_jurado.pack(side="left", padx=2)
+
+            indice_mesa_global += 1  # aumentamos el indice de la mesa
+# ------------------ Widgets de Entrada Principal ------------------
+
+# ------------------ Salón --------------------
+tk.Label(MainWindow, text="Numero de salones:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky='e', padx=10, pady=5)
+entry_salon = tk.Entry(MainWindow)
+entry_salon.grid(row=0, column=1, padx=10, pady=5)
+
+# ------------------ Mesas --------------------
+tk.Label(MainWindow, text="Numero de Mesas por Salón:", font=("Arial", 10, "bold")).grid(row=1, column=0, sticky='e', padx=10, pady=5)
+entry_mesas = tk.Entry(MainWindow)
+entry_mesas.grid(row=1, column=1, padx=10, pady=5)
+
+# ------------------ Jurados --------------------
+
+tk.Label(MainWindow, text="Numero de Jurados por Mesa:", font=("Arial", 10, "bold")).grid(row=2, column=0, sticky='e', padx=10, pady=5)
+entry_jurados = tk.Entry(MainWindow)
+entry_jurados.grid(row=2, column=1, padx=10, pady=5)
+
+# # ------------------ Botón --------------------
+
+boton = tk.Button(MainWindow, text="Generar Centro de Votación", command=generar_votacion, font=("Arial", 10, "bold"))
+boton.grid(row=3, column=0, columnspan=2, pady=20)
+
+MainWindow.mainloop()
+
+#Hecho por Santiago Sanchez Giraldo
+
+
