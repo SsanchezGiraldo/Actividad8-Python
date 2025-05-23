@@ -186,7 +186,7 @@ def mostrar_datos_jurados(indice_mesa):
 
 # ------------------ Función para guardar datos del jurado ------------------
 Datos_Jurado = []  # Lista para guardar los datos del jurado
-print(Datos_Jurado)
+
 def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice de la mesa para guardar los datos de la mesa correcta
     Datos_Guardados = []
     total_mesas = int(entry_mesas.get())
@@ -199,24 +199,26 @@ def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice
         if entry.get() == "":
             messagebox.showerror("Error", "Por favor, complete todos los campos.")
             return 
-    #.replace(" ", "") es para eliminar los espacios en blanco    
+    #.replace(" ", "") es para eliminar los espacios en blanco y hace que .isalnum() solo verifique letras y números  
     if not direccion.replace(" ", "").isalnum():
         messagebox.showerror("Error", "La dirección no puede contener caracteres especiales, solo letras, números y espacios.")
         return
+    #.isdigit() verifica si la cadena contiene solo dígitos, si no es así, se muestra un mensaje de error
     if direccion.isdigit():
         messagebox.showerror("Error", "La dirección no puede ser solo números.")
         return
-    
-
+    #.isalpha() verifica si la cadena contiene solo letras, si no es así, se muestra un mensaje de error
+    if not entradas[0].get().isalpha():
+        messagebox.showerror("Error", "Por favor, ingrese solo letras en el nombre.")
+        return
+    #.isdigit() verifica si la cadena contiene solo dígitos, si no es así, se muestra un mensaje de error
     if not entradas[1].get().isdigit():
         messagebox.showerror("Error", f"Por favor, ingrese solo números enteros válidos en la cédula.")
         return
     if not entradas[2].get().isdigit():
         messagebox.showerror("Error", "Por favor, ingrese solo números enteros válidos en el telefono.")
         return
-    
-    
-    
+           
 
     for entry in entradas:
         Datos_Guardados.append(entry.get()) 
