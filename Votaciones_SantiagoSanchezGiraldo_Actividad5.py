@@ -19,10 +19,10 @@ def guardaDatosVotaciones():
             writer.writerow(["Cantidad de Mesas por Salón", entry_mesas.get()])
             writer.writerow(["Cantidad de Jurados por Mesa", entry_jurados.get()])
             writer.writerow([])
-
+            
             # Datos de jurados por mesa
             writer.writerow(["---------Jurados por Mesa--------\n"])
-            
+            writer.writerow(["---------Mesa,Nombre,Cedula,Telefono,Direccion--------\n"])
             for i, jurados in enumerate(jurados_por_mesa):
                 for jurado in jurados:
                     writer.writerow([f"Mesa {i+1}", jurado[0], jurado[1], jurado[2], jurado[3]])
@@ -69,7 +69,7 @@ def cargar_votantes():
         messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
 #######################
 def buscar_votante():
-    cedula=EntryBuscarJurado.get()
+    cedula=EntryBuscarVotante.get()
     for votante in votantes:
         if votante["cedula"] == cedula:
             messagebox.showinfo("Votante encontrado", f"Nombre: {votante['nombre']}\nCédula: {votante['cedula']}\nSalon: {votante['salon']}\nMesa: {votante['mesa']}")
@@ -175,6 +175,7 @@ def mostrar_datos_jurados(indice_mesa):
 
 # ------------------ Función para guardar datos del jurado ------------------
 Datos_Jurado = []  # Lista para guardar los datos del jurado
+print(Datos_Jurado)
 def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice de la mesa para guardar los datos de la mesa correcta
     Datos_Guardados = []
     for entry in entradas:
