@@ -69,13 +69,15 @@ def cargar_votantes():
         messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
 #######################
 def buscar_votante():
-    cedula=EntryBuscarVotante.get()
+    
+    cedula=int(EntryBuscarVotante.get())
+
     for votante in votantes:
         if votante["cedula"] == cedula:
             messagebox.showinfo("Votante encontrado", f"Nombre: {votante['nombre']}\nCédula: {votante['cedula']}\nSalon: {votante['salon']}\nMesa: {votante['mesa']}")
             return
     if cedula =="":
-        messagebox.showerror("Error", "Por favor, ingrese una cédula.")
+        messagebox.showerror("Error", "Por favor, ingrese una cédula o valor numerico.")
 
 def buscar_jurado():
     cedulajurado=EntryBuscarJurado.get()
@@ -84,7 +86,7 @@ def buscar_jurado():
 
     for jurado in Datos_Jurado:
         if jurado[1] == cedulajurado:
-            messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[2]}\nMesa: {jurado[3]}")
+            messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[4]}\nMesa: {jurado[5]}")
             return
     messagebox.showerror("Error", "No se encontró el jurado con la cédula ingresada.")
 
@@ -187,17 +189,41 @@ Datos_Jurado = []  # Lista para guardar los datos del jurado
 print(Datos_Jurado)
 def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice de la mesa para guardar los datos de la mesa correcta
     Datos_Guardados = []
+    total_mesas = int(entry_mesas.get())
+    salon_num = (indice_mesa // total_mesas) + 1
+    mesa_num = (indice_mesa % total_mesas) + 1
+    direccion = entradas[3].get()
+
+    # Verifica si los campos están vacíos
     for entry in entradas:
         if entry.get() == "":
             messagebox.showerror("Error", "Por favor, complete todos los campos.")
             return 
+    #.replace(" ", "") es para eliminar los espacios en blanco    
+    if not direccion.replace(" ", "").isalnum():
+        messagebox.showerror("Error", "La dirección no puede contener caracteres especiales, solo letras, números y espacios.")
+        return
+    if direccion.isdigit():
+        messagebox.showerror("Error", "La dirección no puede ser solo números.")
+        return
+    
+
+    if not entradas[1].get().isdigit():
+        messagebox.showerror("Error", f"Por favor, ingrese solo números enteros válidos en la cédula.")
+        return
+    if not entradas[2].get().isdigit():
+        messagebox.showerror("Error", "Por favor, ingrese solo números enteros válidos en el telefono.")
+        return
+    
+    
+    
 
     for entry in entradas:
         Datos_Guardados.append(entry.get()) 
 
     jurados_por_mesa[indice_mesa].append(Datos_Guardados)  #Se guarda en la lista correspondiente 
 
-    Datos_Jurado.append(Datos_Guardados)  # Se guarda en la lista de jurados
+    Datos_Jurado.append(Datos_Guardados + [f"salon {salon_num}", f"mesa {mesa_num}"])  # Se guarda en la lista de jurados
 
     label = tk.Label(Frame_Formulario, text="Los datos han sido guardados correctamente")
     label.pack(pady=10)
