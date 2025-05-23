@@ -77,16 +77,7 @@ def buscar_votante():
     if cedula =="":
         messagebox.showerror("Error", "Por favor, ingrese una cédula.")
 
-def buscar_jurado():
-    cedulajurado=EntryBuscarJurado.get()
-    if cedulajurado =="":
-        messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
 
-    for jurado in Datos_Jurado:
-        if jurado[1] == cedulajurado:
-            messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[2]}\nMesa: {jurado[3]}")
-            return
-    messagebox.showerror("Error", "No se encontró el jurado con la cédula ingresada.")
 
 
             
