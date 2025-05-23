@@ -7,6 +7,13 @@ MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
 MainWindow.geometry("800x600") 
 #Hecho por Santiago Sanchez Giraldo
+#-------------Apartado para duplcados de la cedula de los jurados y votantes----------------
+cedula_jurados = set()  # Conjunto para almacenar cédulas de jurados
+cedula_votantes = set()  # Conjunto para almacenar cédulas de votantes
+
+    
+
+
 #---------------Guarda en un archivo los datos de los jurados en csv------------------
 def guardaDatosVotaciones():
     try:
@@ -54,8 +61,15 @@ def cargar_votantes():
             lector = csv.reader(f)
             next(lector, None)
             votantes.clear()
+            cedula_votantes.clear()  # Limpiar el conjunto de cédulas de votantes
             for fila in lector:
                 if len(fila) >= 4:
+                    cedula = fila[1].strip()  # Eliminar espacios en blanco
+                    # cedula recorre el archivo y verifica si la cedula ya esta registrada
+                    if cedula in cedula_votantes:
+                        messagebox.showwarning("Duplicado", f"La cedula {cedula} ya esta registrada en la lista de votantes.")
+                        continue
+                    cedula_votantes.add(cedula)  # Agregar cédula al conjunto
                     votantes.append({
                         "nombre": fila[0],
                         "cedula": fila[1], 
@@ -67,10 +81,10 @@ def cargar_votantes():
     #except es para capturar errores si el usuario no ingresa un valor no deseado.
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
-#######################
+#---------------Buscar votante por cedula------------------
 def buscar_votante():
     
-    cedula=int(EntryBuscarVotante.get())
+    cedula=(EntryBuscarVotante.get())
 
     for votante in votantes:
         if votante["cedula"] == cedula:
@@ -78,17 +92,34 @@ def buscar_votante():
             return
     if cedula =="":
         messagebox.showerror("Error", "Por favor, ingrese una cédula o valor numerico.")
+    if cedula not in cedula_votantes:
+        messagebox.showerror("Error", "No se encontró el votante con la cédula ingresada.")
+        return
 
+#------------------Buscar jurado por cedula------------------
 def buscar_jurado():
     cedulajurado=EntryBuscarJurado.get()
     if cedulajurado =="":
         messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
+    
+    if cedulajurado in cedula_jurados:
+    # La cédula existe, ahora verifica si está duplicada
+        contador = sum(1 for jurado in Datos_Jurado if jurado[1] == cedulajurado)
+        if contador > 1:
+            messagebox.showwarning("Duplicado", f"La cédula {cedulajurado} está duplicada.")
+
+    if cedulajurado in cedula_jurados:
+        messagebox.showwarning("Duplicado", "La cédula ya está registrada.")
+        return
+
+
 
     for jurado in Datos_Jurado:
         if jurado[1] == cedulajurado:
             messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[4]}\nMesa: {jurado[5]}")
             return
-    messagebox.showerror("Error", "No se encontró el jurado con la cédula ingresada.")
+    
+    
 
 
             
@@ -193,8 +224,9 @@ def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice
     salon_num = (indice_mesa // total_mesas) + 1
     mesa_num = (indice_mesa % total_mesas) + 1
     direccion = entradas[3].get()
-
-    # Verifica si los campos están vacíos
+    cedula = entradas[1].get().strip()  # Eliminar espacios en blanco
+    
+        # Verifica si los campos están vacíos
     for entry in entradas:
         if entry.get() == "":
             messagebox.showerror("Error", "Por favor, complete todos los campos.")
@@ -203,7 +235,16 @@ def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice
     if not direccion.replace(" ", "").isalnum():
         messagebox.showerror("Error", "La dirección no puede contener caracteres especiales, solo letras, números y espacios.")
         return
+    if cedula in cedula_jurados:
+        messagebox.showwarning("Duplicado", f"La cédula {cedula} ya está registrada.")
+        return
+    else: 
+        cedula_jurados.add(cedula)
+
+   
+    
     #.isdigit() verifica si la cadena contiene solo dígitos, si no es así, se muestra un mensaje de error
+    
     if direccion.isdigit():
         messagebox.showerror("Error", "La dirección no puede ser solo números.")
         return
@@ -218,7 +259,8 @@ def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice
     if not entradas[2].get().isdigit():
         messagebox.showerror("Error", "Por favor, ingrese solo números enteros válidos en el telefono.")
         return
-           
+     
+         
 
     for entry in entradas:
         Datos_Guardados.append(entry.get()) 
