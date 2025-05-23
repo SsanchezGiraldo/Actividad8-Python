@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox 
 from tkinter import filedialog
 import csv 
+import matplotlib as mt
 MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
 MainWindow.geometry("800x600") 
@@ -66,9 +67,9 @@ def cargar_votantes():
     #except es para capturar errores si el usuario no ingresa un valor no deseado.
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
-
+#######################
 def buscar_votante():
-    cedula=EntryBuscarVotante.get()
+    cedula=EntryBuscarJurado.get()
     for votante in votantes:
         if votante["cedula"] == cedula:
             messagebox.showinfo("Votante encontrado", f"Nombre: {votante['nombre']}\nCédula: {votante['cedula']}\nSalon: {votante['salon']}\nMesa: {votante['mesa']}")
@@ -76,6 +77,16 @@ def buscar_votante():
     if cedula =="":
         messagebox.showerror("Error", "Por favor, ingrese una cédula.")
 
+def buscar_jurado():
+    cedulajurado=EntryBuscarJurado.get()
+    if cedulajurado =="":
+        messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
+
+    for jurado in Datos_Jurado:
+        if jurado[1] == cedulajurado:
+            messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[2]}\nMesa: {jurado[3]}")
+            return
+    messagebox.showerror("Error", "No se encontró el jurado con la cédula ingresada.")
 
 
             
@@ -113,7 +124,7 @@ LabelBuscarJurado.grid(row=7, column=0, sticky='e', padx=10, pady=5)  #El sticky
 EntryBuscarJurado = tk.Entry(MainWindow)
 EntryBuscarJurado.grid(row=7, column=1, padx=5, pady=5)
 
-botonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"))
+botonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_jurado)
 botonBuscarJurado.grid(row=7, column=2, padx=5, pady=5)
 #------------------Buscar Votantes por cedula------------------
 LabelBuscarVotante = tk.Label(MainWindow, text="Buscar Votante por Cédula:", font=("Arial", 10, "bold"))
@@ -172,6 +183,7 @@ def mostrar_datos_jurados(indice_mesa):
     messagebox.showinfo(f"Datos del Salón {salon_num} - Mesa {mesa_num}", SalidaTexto)
 
 # ------------------ Función para guardar datos del jurado ------------------
+Datos_Jurado = []  # Lista para guardar los datos del jurado
 def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice de la mesa para guardar los datos de la mesa correcta
     Datos_Guardados = []
     for entry in entradas:
@@ -183,6 +195,8 @@ def guardar_datos(entradas, Frame_Formulario, indice_mesa): #Se añade el indice
         Datos_Guardados.append(entry.get()) 
 
     jurados_por_mesa[indice_mesa].append(Datos_Guardados)  #Se guarda en la lista correspondiente 
+
+    Datos_Jurado.append(Datos_Guardados)  # Se guarda en la lista de jurados
 
     label = tk.Label(Frame_Formulario, text="Los datos han sido guardados correctamente")
     label.pack(pady=10)
