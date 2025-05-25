@@ -3,10 +3,86 @@ from tkinter import messagebox
 from tkinter import filedialog
 import csv 
 import matplotlib as mt
+import datetime as dt
 MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
 MainWindow.geometry("800x600") 
 #Hecho por Santiago Sanchez Giraldo
+
+#---------------Formulario de asistencia votantes------------------
+def formulario_asistencia():
+    Frame_Asistencia = tk.Toplevel(MainWindow)
+    Frame_Asistencia.title("Formulario de Asistencia de los votantes")
+    Frame_Asistencia.geometry("300x400")
+
+    campos = ["Cedula", "Salon", "Mesa", "Hora de votacion"]
+    entradas = []
+
+    for campo in campos:
+        label = tk.Label(Frame_Asistencia, text=f"{campo}:")
+        label.pack()
+        entryF = tk.Entry(Frame_Asistencia)
+        entryF.pack()
+        entradas.append(entryF)
+
+    def guardar_asistencia():
+        datos = [entry.get() for entry in entradas]
+        
+        # Verificar que ningún campo esté vacío
+        if any(dato.strip() == "" for dato in datos):
+            messagebox.showerror("Error", "Todos los campos deben estar llenos.")
+            return
+        cedula_ingresada = datos[0].strip()
+        mesa_ingresada = datos[2].strip()
+        salon_ingresada = datos[1].strip()
+        #Verificar que la cedula 
+        existe_votante = any(v["cedula"]== cedula_ingresada for v in votantes)
+        if not existe_votante:
+            messagebox.showerror("Error", "La cédula ingresada no corresponde a un votante registrado.")
+            return
+        # Verificar que la cédula sea un número entero
+        if not cedula_ingresada.isdigit():
+            messagebox.showerror("Error", "La cédula debe ser un número entero.")
+            return
+        #verifica si el salon es un número entero
+        if not salon_ingresada.replace(" ", "").isdigit():
+            messagebox.showerror("Error", "El salón debe ser un número entero.")
+            return
+        #verifica si la mesa es un número entero
+        if not mesa_ingresada.replace(" ", "").isdigit():
+            messagebox.showerror("Error", "La mesa debe ser un número entero.")
+            return
+        
+
+        hora_escrita= datos[3]
+        # Verificar que la hora de votación sea válida
+        try:
+            hora_votacion = dt.datetime.strptime(hora_escrita, "%H:%M").time()
+        #HH es para que la hora sea en formato de 24 horas y MM es para que los minutos sean en formato de 60 minutos
+        except ValueError:
+            messagebox.showerror("Error", "La hora de votación debe estar en formato HH:MM en formato de 24 horas.")
+        hora_minima = dt.time(16,0) # 4:00 pm
+
+        if hora_votacion > hora_minima:
+            messagebox.showerror("Error", "La hora de votación no puede ser antes de las 4:00 PM.")
+            return
+        
+        # si en el caso de que sea la hora correcta, se guardará en un archivos csv
+        try:
+            # Abrimos el archivo en modo append para no sobrescribir
+            #"utf-8" es para que el archivo se guarde en un formato que soporte caracteres especiales
+            #newline es para que que los salts de linea no se guarden como caracteres especiales
+            with open("DatosVotaciones.csv", "a", newline="", encoding="utf-8") as archivo:
+                writer = csv.writer(archivo)
+                #¨*datos es para que se guarde en una sola fila
+                writer.writerow(["Asistencia", *datos])
+            messagebox.showinfo("Éxito", "Asistencia registrada correctamente.")
+            Frame_Asistencia.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar la asistencia: {e}")
+
+    boton_guardar = tk.Button(Frame_Asistencia, text="Guardar Asistencia", command=guardar_asistencia)
+    boton_guardar.pack(pady=10)
 #---------------Guarda en un archivo los datos de los jurados en csv------------------
 def guardaDatosVotaciones():
     try:
@@ -70,25 +146,43 @@ def cargar_votantes():
 #######################
 def buscar_votante():
     
-    cedula=int(EntryBuscarVotante.get())
+    cedula=EntryBuscarVotante.get()
 
     for votante in votantes:
         if votante["cedula"] == cedula:
             messagebox.showinfo("Votante encontrado", f"Nombre: {votante['nombre']}\nCédula: {votante['cedula']}\nSalon: {votante['salon']}\nMesa: {votante['mesa']}")
             return
+      
     if cedula =="":
         messagebox.showerror("Error", "Por favor, ingrese una cédula o valor numerico.")
 
-def buscar_jurado():
-    cedulajurado=EntryBuscarJurado.get()
-    if cedulajurado =="":
-        messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
+    if not votante in votantes:
+        # Si la cédula no se encuentra en la lista de votantes
+        messagebox.showerror("Error", "No existe ningún votante con la cédula ingresada.")
+        return    
+    messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
 
+def buscar_jurado():
+    cedulajurado = EntryBuscarJurado.get().strip()
+    
+    if cedulajurado == "":
+        messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
+        return  # Para que no siga ejecutándose
+    
+    # Buscar jurado con esa cédula
     for jurado in Datos_Jurado:
         if jurado[1] == cedulajurado:
-            messagebox.showinfo("Jurado encontrado", f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalon: {jurado[4]}\nMesa: {jurado[5]}")
+            messagebox.showinfo(
+                "Jurado encontrado", 
+                f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalón: {jurado[4]}\nMesa: {jurado[5]}"
+            )
             return
-    messagebox.showerror("Error", "No se encontró el jurado con la cédula ingresada.")
+    if not jurado in Datos_Jurado:
+        # Si la cédula no se encuentra en la lista de jurados
+        messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
+        return
+    # Si no se encontró, mostrar error
+    messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
 
 
             
@@ -104,40 +198,41 @@ def buscar_jurado():
     
     
         
-#------Guardar centro de votacion-------------------
-
-BotonGuardarCentro= tk.Button(MainWindow, text="Guardar centro de votacion",font=("Arial", 10, "bold"),command= guardaDatosVotaciones)
+# ------ Guardar centro de votación -------------------
+BotonGuardarCentro = tk.Button(MainWindow, text="Guardar centro de votacion", font=("Arial", 10, "bold"), command=guardaDatosVotaciones, width=25)
 BotonGuardarCentro.grid(row=4, column=0, columnspan=2, pady=10)
 
-#------------------Cargar Centro de votacion------------------
+# ------ Cargar Centro de votación -------------------
+BotonCargarVotacion = tk.Button(MainWindow, text="Cargar Centro de votacion", font=("Arial", 10, "bold"), width=25)
+BotonCargarVotacion.grid(row=5, column=0, columnspan=2, pady=10)
 
-BotonCargarVotacion= tk.Button(MainWindow, text="Cargar Centro de votacion",font=("Arial", 10, "bold"))
-BotonCargarVotacion.grid(row=5, column=0, columnspan=2, pady=18)
-
-#----------------Carga los datos de los votantes------------------
-
-BotonCargarVotantes= tk.Button(MainWindow, text="Cargar Datos votantes",font=("Arial", 10, "bold"),command = cargar_votantes)
+# ------ Cargar los datos de los votantes -------------------
+BotonCargarVotantes = tk.Button(MainWindow, text="Cargar Datos votantes", font=("Arial", 10, "bold"), command=cargar_votantes, width=25)
 BotonCargarVotantes.grid(row=6, column=0, columnspan=2, pady=10)
 
-#------------------Buscar Jurados por cedula------------------
+# ------ Botón del formulario de asistencia -------------------
+BotonAsistencia = tk.Button(MainWindow, text="Formulario de Asistencia", font=("Arial", 10, "bold"), width=25, command=formulario_asistencia)
+BotonAsistencia.grid(row=7, column=0, columnspan=2, pady=10)
+
+# ------ Buscar Jurado por cédula -------------------
 LabelBuscarJurado = tk.Label(MainWindow, text="Buscar Jurado por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarJurado.grid(row=7, column=0, sticky='e', padx=10, pady=5)  #El sticky es para que el texto quede alineado a la derecha
+LabelBuscarJurado.grid(row=8, column=0, sticky='e', padx=10, pady=5)    
 
 EntryBuscarJurado = tk.Entry(MainWindow)
-EntryBuscarJurado.grid(row=7, column=1, padx=5, pady=5)
+EntryBuscarJurado.grid(row=8, column=1, padx=5, pady=5)
 
-botonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_jurado)
-botonBuscarJurado.grid(row=7, column=2, padx=5, pady=5)
-#------------------Buscar Votantes por cedula------------------
+BotonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_jurado, width=10)
+BotonBuscarJurado.grid(row=8, column=2, padx=5, pady=5)
+
+# ------ Buscar Votante por cédula -------------------
 LabelBuscarVotante = tk.Label(MainWindow, text="Buscar Votante por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarVotante.grid(row=8, column=0, sticky='e', padx=10, pady=5) #El sticky es para que el texto quede alineado a la derecha
+LabelBuscarVotante.grid(row=9, column=0, sticky='e', padx=10, pady=5)
 
 EntryBuscarVotante = tk.Entry(MainWindow)
-EntryBuscarVotante.grid(row=8, column=1, padx=5, pady=5)
+EntryBuscarVotante.grid(row=9, column=1, padx=5, pady=5)
 
-BotonBuscarVotante = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_votante)
-BotonBuscarVotante.grid(row=8, column=2, padx=5, pady=5)
-
+BotonBuscarVotante = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_votante, width=10)
+BotonBuscarVotante.grid(row=9, column=2, padx=5, pady=5)
 
 # ------------------ Lista de listas para guardar jurados por mesa ------------------
 # Cada sublista representa una mesa, y contiene listas con los datos de los jurados
@@ -313,7 +408,7 @@ entry_jurados.grid(row=2, column=1, padx=10, pady=5)
 
 # # ------------------ Botón --------------------
 
-boton = tk.Button(MainWindow, text="Generar Centro de Votación", command=generar_votacion, font=("Arial", 10, "bold"))
+boton = tk.Button(MainWindow, text="Generar Centro de Votación", command=generar_votacion, font=("Arial", 10, "bold"), width=25)
 boton.grid(row=3, column=0, columnspan=2, pady=20)
 
 MainWindow.mainloop()
