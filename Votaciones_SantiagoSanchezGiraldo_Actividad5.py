@@ -4,18 +4,60 @@ from tkinter import filedialog
 import csv 
 import matplotlib as mt
 import datetime as dt
+import pandas as pd 
+
 MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
 MainWindow.geometry("800x600") 
 #Hecho por Santiago Sanchez Giraldo
+#---------------Resultado estadisticos--------------------
+def mostrar_estadisticas():
+    jurados_df = pd.read_csv("jurados.csv")
+    votantes_df = pd.read_csv("votantes.csv")
+    asistencia_df = pd.read_csv("DatosAsistencia.csv", header=None)
+    resultados_df = pd.read_csv("ArchivoResultados.csv")  
+    
 
+
+#---------------Resultados preguntas--------------------
+def cargar_resultados_desde_csv():
+    archivo = filedialog.askopenfilename(
+        title="Seleccionar archivo CSV de resultados",
+        filetypes=[("Archivos CSV", "*.csv")]
+    )
+    if not archivo:
+        messagebox.showerror("Error", "No se seleccionó ningún archivo.")
+        return  # El usuario canceló
+
+    try:
+        with open(archivo, "r", encoding="utf-8") as f:
+            lector = csv.DictReader(f)
+            encabezados_esperados = ["salon", "mesa", "tarjeton"] + [f"p{i}" for i in range(1, 10)]
+
+            # Verifica que los encabezados del archivo sean los esperados
+            if lector.fieldnames != encabezados_esperados:
+                messagebox.showerror(
+                    "Error",
+                    f"Encabezados incorrectos.\nSe esperaban:\n{', '.join(encabezados_esperados)}\n"
+                    f"Se encontraron:\n{', '.join(lector.fieldnames)}"
+                )
+                return
+            ##########################   
+            resultados = [fila for fila in lector]  # Lista con todos los resultados
+
+            messagebox.showinfo("Éxito", f"Se cargaron {len(resultados)} resultados correctamente.")
+            # Aquí puedes procesar o guardar los resultados en tu programa si es necesario
+
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo leer el archivo CSV: {e}")
+    
 #---------------Formulario de asistencia votantes------------------
 def formulario_asistencia():
     Frame_Asistencia = tk.Toplevel(MainWindow)
     Frame_Asistencia.title("Formulario de Asistencia de los votantes")
     Frame_Asistencia.geometry("300x400")
 
-    campos = ["Cedula", "Salon", "Mesa", "Hora de votacion"]
+    campos = ["Cedula del votante", "Salon", "Mesa", "Hora de votacion(HH:MM,24h)"]
     entradas = []
 
     for campo in campos:
@@ -69,13 +111,24 @@ def formulario_asistencia():
         
         # si en el caso de que sea la hora correcta, se guardará en un archivos csv
         try:
-            # Abrimos el archivo en modo append para no sobrescribir
-            #"utf-8" es para que el archivo se guarde en un formato que soporte caracteres especiales
-            #newline es para que que los salts de linea no se guarden como caracteres especiales
-            with open("DatosVotaciones.csv", "a", newline="", encoding="utf-8") as archivo:
+            escribir_encabezado = True
+    # Verificar si el archivo ya existe y tiene contenido
+            try:
+                with open("DatosAsistencia.csv", "r", encoding="utf-8") as archivo_lectura:
+                    primera_linea = archivo_lectura.readline()
+                    if primera_linea.strip():  # si hay algo escrito en la primera línea
+                        escribir_encabezado = False
+            except FileNotFoundError:
+        # El archivo no existe aún, así que sí escribimos encabezado
+                escribir_encabezado = True
+
+    # Abrimos en modo append
+            with open("DatosAsistencia.csv", "a", newline="", encoding="utf-8") as archivo:
                 writer = csv.writer(archivo)
-                #¨*datos es para que se guarde en una sola fila
+                if escribir_encabezado:
+                    writer.writerow(["tipo", "cedula", "salón", "mesa", "hora"])
                 writer.writerow(["Asistencia", *datos])
+
             messagebox.showinfo("Éxito", "Asistencia registrada correctamente.")
             Frame_Asistencia.destroy()
         except Exception as e:
@@ -110,7 +163,28 @@ def guardaDatosVotaciones():
             for v in votantes:
                 writer.writerow([v["nombre"], v["cedula"], v["salon"], v["mesa"]])
 
-        messagebox.showinfo("Guardado", "Los datos fueron guardados exitosamente en 'DatosVotaciones.csv'")
+       # Archivos separados y tabulares para pandas:
+
+        # Guardar jurados.csv
+        with open("jurados.csv", "w", newline="", encoding="utf-8") as jurado_file:
+            jurado_writer = csv.writer(jurado_file)
+            jurado_writer.writerow(["salon", "mesa", "nombre", "cedula", "telefono", "direccion"])
+            for mesa_index, jurados in enumerate(jurados_por_mesa):
+                salon = mesa_index // int(entry_mesas.get()) + 1  # Calcula salón según index
+                mesa = mesa_index % int(entry_mesas.get()) + 1
+                for jurado in jurados:
+                    jurado_writer.writerow([salon, mesa, jurado[0], jurado[1], jurado[2], jurado[3]])
+
+        # Guardar votantes.csv
+        with open("votantes.csv", "w", newline="", encoding="utf-8") as votantes_file:
+            votante_writer = csv.writer(votantes_file)
+            votante_writer.writerow(["nombre", "cedula", "salon", "mesa"])
+            for v in votantes:
+                votante_writer.writerow([v["nombre"], v["cedula"], v["salon"], v["mesa"]])
+
+        
+
+        messagebox.showinfo("Guardado", "Los datos fueron guardados exitosamente en múltiples archivos CSV.")
 
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo guardar el archivo: {e}")
@@ -182,21 +256,8 @@ def buscar_jurado():
         messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
         return
     # Si no se encontró, mostrar error
-    messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
-
-
-            
-
-    
-#---Abrir el archivo y guardar los datos de los jurados en el archivo csv---
-#def Ingresar_Archivo():
-    #el defaultextension es para que el sistema operativo sepa que el archivo es un csv y el filetypes es para que el usuario sepa que tipo de archivo en el buscador de archivos.
-   # archivo_guardar = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")]) 
-   # if not archivo_guardar:
-       # messagebox.showerror("Error", "No se seleccionó ningún archivo.")
-        #return
-    
-    
+    messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")      
+     
         
 # ------ Guardar centro de votación -------------------
 BotonGuardarCentro = tk.Button(MainWindow, text="Guardar centro de votacion", font=("Arial", 10, "bold"), command=guardaDatosVotaciones, width=25)
@@ -214,25 +275,34 @@ BotonCargarVotantes.grid(row=6, column=0, columnspan=2, pady=10)
 BotonAsistencia = tk.Button(MainWindow, text="Formulario de Asistencia", font=("Arial", 10, "bold"), width=25, command=formulario_asistencia)
 BotonAsistencia.grid(row=7, column=0, columnspan=2, pady=10)
 
-# ------ Buscar Jurado por cédula -------------------
+# ------ Botón para mostrar resultados de las preguntas -------------------
+BotonResultadosPreguntas = tk.Button(MainWindow, text="Cargar resultados desde CSV", font=("Arial", 10, "bold"), command=cargar_resultados_desde_csv, width=25)
+BotonResultadosPreguntas.grid(row=8, column=0, columnspan=2, pady=10)
+
+# ------ Botón para mostrar estadísticas -------------------
+BotonResultadoEstadisticos = tk.Button(MainWindow, text="Mostrar Estadísticas",command=mostrar_estadisticas, font=("Arial", 10, "bold"), width=25)
+BotonResultadoEstadisticos.grid(row=9, column=0, columnspan=2, pady=10)
+
+# ------ Buscar Jurado por cédula -------------------eeeeeee
 LabelBuscarJurado = tk.Label(MainWindow, text="Buscar Jurado por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarJurado.grid(row=8, column=0, sticky='e', padx=10, pady=5)    
+LabelBuscarJurado.grid(row=10, column=0, sticky='e', padx=10, pady=5)    
 
 EntryBuscarJurado = tk.Entry(MainWindow)
-EntryBuscarJurado.grid(row=8, column=1, padx=5, pady=5)
+EntryBuscarJurado.grid(row=10, column=1, padx=5, pady=5)
 
 BotonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_jurado, width=10)
-BotonBuscarJurado.grid(row=8, column=2, padx=5, pady=5)
+BotonBuscarJurado.grid(row=10, column=2, padx=5, pady=5)
 
 # ------ Buscar Votante por cédula -------------------
 LabelBuscarVotante = tk.Label(MainWindow, text="Buscar Votante por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarVotante.grid(row=9, column=0, sticky='e', padx=10, pady=5)
+LabelBuscarVotante.grid(row=11, column=0, sticky='e', padx=10, pady=5)
 
 EntryBuscarVotante = tk.Entry(MainWindow)
-EntryBuscarVotante.grid(row=9, column=1, padx=5, pady=5)
+EntryBuscarVotante.grid(row=11, column=1, padx=5, pady=5)
 
 BotonBuscarVotante = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_votante, width=10)
-BotonBuscarVotante.grid(row=9, column=2, padx=5, pady=5)
+BotonBuscarVotante.grid(row=11, column=2, padx=5, pady=5)
+
 
 # ------------------ Lista de listas para guardar jurados por mesa ------------------
 # Cada sublista representa una mesa, y contiene listas con los datos de los jurados

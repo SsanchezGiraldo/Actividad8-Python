@@ -1,2 +1,21 @@
-Asistencia,12345,1,1,3:00
-Asistencia,1234,1,1,12:00
+"------------Centro de Votación-----------
+"
+Cantidad de Salones,1
+Cantidad de Mesas por Salón,2
+Cantidad de Jurados por Mesa,3
+
+"---------Jurados por Mesa--------
+"
+"---------Mesa,Nombre,Cedula,Telefono,Direccion--------
+"
+Mesa 1,santiago,123,312123123,cll 2
+Mesa 2,mati,123456,21313213,cll 2
+
+"-----------Votantes---------
+"
+    nombre,cedula,salon,mesa
+    Santiago,1234,salon 1,mesa 1
+    Juliana,12345,salon 1,mesa 1
+    Marlo,123456,salon 2, mesa 1 
+    Monica,1234567,salon 2,mesa 4
+    oscar,12345678,salon 1,mesa 5
