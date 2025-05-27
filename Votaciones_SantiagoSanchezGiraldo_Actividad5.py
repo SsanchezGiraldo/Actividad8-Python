@@ -9,7 +9,7 @@ from tkinter import ttk
 
 MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
-MainWindow.geometry("800x600") 
+MainWindow.geometry("1980x1080") 
 #Hecho por Santiago Sanchez Giraldo
 #---------------Grafica de resultados--------------------
 def generar_graficos():
@@ -17,7 +17,7 @@ def generar_graficos():
     #toplevel es una ventana emergente que se abre al hacer click en el boton de generar graficos
     ventana_barras = tk.Toplevel(MainWindow)
     ventana_barras.title("Gráfico de Resultados por Salón")
-    ventana_barras.geometry("800x600")
+    ventana_barras.geometry("400x600")
     #Cuandro de texto para decir que se va a generar un grafico de barras
     Label1 = tk.Label(ventana_barras, text="Gráfico de Resultados por Salón", font=("Arial", 16, "bold"))
     Label1.pack(pady=10)
@@ -76,34 +76,181 @@ def generar_graficos():
     def Grafica_Pastel():
         
         try:
+            JUROS_POR_MESA = int(entry_jurados.get())
+        
+            # 1. Leer datos y asegurar columnas
             jurados_df = pd.read_csv("jurados.csv")
-            JUROS_POR_MESA = 2  # Ajusta este valor según lo necesario
-        
-            conteo = jurados_df.groupby(['salon', 'mesa']).size()
-            mesas_completas = (conteo >= JUROS_POR_MESA).sum()
-            mesas_incompletas = len(conteo) - mesas_completas
+            if not {'salon', 'mesa'}.issubset(jurados_df.columns):
+                raise ValueError("El archivo no tiene las columnas 'salon' y 'mesa'")
 
-            plt.figure(figsize=(8, 6))
-            plt.pie([mesas_completas, mesas_incompletas],
-                labels=['Completas', 'Incompletas'],
-                autopct='%1.1f%%',
-                colors=['#4CAF50', '#F44336'],
-                startangle=90,
-                wedgeprops={'linewidth': 1, 'edgecolor': 'white'})
+            # 2. Obtener TODAS las mesas (aunque no tengan jurados)
+            total_mesas = int(entry_salon.get()) * int(entry_mesas.get())
         
-            plt.title(f'Mesas con Jurados Completos ({JUROS_POR_MESA}+ jurados)\nTotal mesas: {len(conteo)}')
+            # 3. Contar jurados por mesa (mesas sin jurados aparecerán como NaN)
+            conteo_jurados = jurados_df.groupby(['salon', 'mesa']).size()
+        
+            # 4. Clasificación precisa
+            mesas_completas = sum(conteo_jurados >= JUROS_POR_MESA)
+            mesas_incompletas = total_mesas - mesas_completas  # Incluye mesas sin jurados
+
+            # 5. Validación
+            if total_mesas == 0:
+                raise ValueError("No hay mesas configuradas")
+
+            # 6. Gráfico mejorado
+            plt.figure(figsize=(10, 6))
+        
+            # Solo mostrar porcentajes si hay datos
+            #La funcion formato_autopct es para que el grafico de pastel muestre los porcentajes con un decimal
+            def formato_autopct(pct):
+                return f'{pct:.1f}%' if pct > 0 else ''
+            #Genera el grafico de pastel  
+            plt.pie(
+                [mesas_completas, mesas_incompletas],
+                labels=[
+                    f'Completas\n({mesas_completas} mesas)',
+                    f'Incompletas\n({mesas_incompletas} mesas)'
+                ],
+                autopct=formato_autopct,
+                colors=['#27ae60', '#e74c3c'],
+                startangle=90,
+                wedgeprops={'linewidth': 1, 'edgecolor': 'white'}
+            )
+        
+            plt.title(
+                f'Estado de Mesas en {int(entry_salon.get())} Salones\n'
+                f'(Requieren {JUROS_POR_MESA}+ jurados)\n'
+                f'Total mesas: {total_mesas}',
+                pad=20
+            )
+        
+            plt.tight_layout()
+            plt.show()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al generar gráfico, se necesita el valor de las mesas y salones:\n{str(e)}")
+    def Grafica_pastel_Asistidos():
+        try:
+            # ======================
+            # 1. Carga de datos
+            # ======================
+            votantes = pd.read_csv("votantes.csv")
+            try:
+                asistencia = pd.read_csv("DatosAsistencia.csv")
+                cedulas_asistentes = set(asistencia['cedula'].astype(str).str.strip())
+            except FileNotFoundError:
+                cedulas_asistentes = set()
+
+            # ======================
+            # 2. Procesamiento
+            # ======================
+            votantes['cedula'] = votantes['cedula'].astype(str).str.strip()
+            total = len(votantes)
+            asistentes = sum(votantes['cedula'].isin(cedulas_asistentes))
+            no_asistentes = total - asistentes
+
+            # ======================
+            # 3. Creación del gráfico
+            # ======================
+
+            #Tamaño de la figura
+            plt.figure(figsize=(8, 6))
+        
+            plt.pie(
+                [asistentes, no_asistentes],
+                labels=[f'Asistieron\n{asistentes}', f'No asistieron\n{no_asistentes}'],
+                autopct=lambda p: f'{p:.1f}%' if p > 0 else '',
+                colors=['#00b894', '#ff7675'],  # Verde/Rojo 
+                startangle=90,
+                wedgeprops={'linewidth': 1, 'edgecolor': 'white'}
+            )
+
+            plt.title(f'Asistencia de Votantes\nTotal padrón: {total}')
             plt.tight_layout()
             plt.show()
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al generar gráfico:\n{str(e)}")
-            
+    def Grafica_Barras_Preguntas():
+        try:
+            # 1. Cargar y limpiar datos
+            resultados = pd.read_csv("ArchivoResultados.csv")
         
+            # Normalizar nombres de columnas
+            resultados.columns = resultados.columns.str.lower().str.strip()
+        
+            # Filtrar columnas de preguntas (p1, p2...)
+            preguntas = [col for col in resultados.columns if col.startswith('p')]
+
+            if not preguntas:
+                raise ValueError("No se encontraron columnas de preguntas (p1, p2...)")
+
+            # 2. Normalizar respuestas
+            mapeo_respuestas = {
+                'si': 'sí', 's': 'sí', 'yes': 'sí',
+                'no': 'no', 'n': 'no'
+            }
+        
+            for pregunta in preguntas:
+                resultados[pregunta] = (
+                    resultados[pregunta]
+                    .astype(str)
+                    .str.lower()
+                    .str.strip()
+                    .replace(mapeo_respuestas)
+                )
             
-    boton_barraas = tk.Button(ventana_barras, text="Generar Gráfico de Barras", command=graficar_barras)
+                # Verificar valores válidos
+                if not resultados[pregunta].isin(['sí', 'no']).all():
+                    invalidos = resultados[~resultados[pregunta].isin(['sí', 'no'])][pregunta].unique()
+                    raise ValueError(
+                        f"Valores inválidos en {pregunta}: {invalidos}\n"
+                        f"Solo se permiten 'sí' o 'no'"
+                    )
+
+            # 3. Generar gráficos
+            fig, axs = plt.subplots(len(preguntas), 1, figsize=(8, 2 * len(preguntas)))
+        
+            for i, pregunta in enumerate(preguntas):
+                ax = axs[i] if len(preguntas) > 1 else axs
+            
+                # Calcular porcentajes
+                stats = (
+                    resultados.groupby('mesa')[pregunta]
+                    .value_counts(normalize=True)
+                    .unstack()
+                    .reindex(columns=['sí', 'no'], fill_value=0) * 100
+                )
+            
+                # Gráfico
+                stats.plot.barh(
+                    stacked=True,
+                    color=['#4e79a7', '#e15759'],
+                    ax=ax,
+                    width=0.7
+                )
+            
+                ax.set_title(f'Pregunta {pregunta.upper()}', fontsize=10)
+                ax.set_xlim(0, 100)
+                if i == 0:
+                    ax.legend(['Sí', 'No'], fontsize=8)
+
+            plt.tight_layout()
+            plt.show()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Revisa el formato del archivo:\n{str(e)}")
+       
+            
+    boton_barraas = tk.Button(ventana_barras, text="Generar Gráfico de Barras", command=graficar_barras,width=28)
     boton_barraas.pack(pady=10)
-    boton_pastel = tk.Button(ventana_barras, text="Generar Gráfico de Pastel", command=Grafica_Pastel)
+    boton_pastel = tk.Button(ventana_barras, text="Generar Gráfico de Pastel", command=Grafica_Pastel,width=28)
     boton_pastel.pack(pady=10)
+    boton_pastel_asistidos = tk.Button(ventana_barras, text="Generar Gráfico de Pastel Asistidos", command=Grafica_pastel_Asistidos,width=28)
+    boton_pastel_asistidos.pack(pady=10)
+    boton_barras_preguntas = tk.Button(ventana_barras, text="Generar Gráfico de Barras por Preguntas",command=Grafica_Barras_Preguntas,width=28)
+    boton_barras_preguntas.pack(pady=10)
+
 #---------------Resultado estadisticos--------------------
 def mostrar_estadisticas():
     jurados_df = pd.read_csv("jurados.csv")

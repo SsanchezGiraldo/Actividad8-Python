@@ -1,15 +1,17 @@
 "------------Centro de Votación-----------
 "
-Cantidad de Salones,1
+Cantidad de Salones,2
 Cantidad de Mesas por Salón,2
-Cantidad de Jurados por Mesa,3
+Cantidad de Jurados por Mesa,2
 
 "---------Jurados por Mesa--------
 "
 "---------Mesa,Nombre,Cedula,Telefono,Direccion--------
 "
-Mesa 1,maria,1234,121212,cll 12
-Mesa 2,calle,23321,21313,cll 123
+Mesa 1,david,321321,321321,cl 12
+Mesa 1,oscar,30,321,cl 12321
+Mesa 2,ujum,1232,321,cll 213
+Mesa 2,marcos,123,321,cll 20
 
 "-----------Votantes---------
 "
