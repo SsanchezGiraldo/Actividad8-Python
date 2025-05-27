@@ -8,14 +8,13 @@ Cantidad de Jurados por Mesa,3
 "
 "---------Mesa,Nombre,Cedula,Telefono,Direccion--------
 "
-Mesa 1,santiago,123,312123123,cll 2
-Mesa 2,mati,123456,21313213,cll 2
+Mesa 1,maria,1234,121212,cll 12
+Mesa 2,calle,23321,21313,cll 123
 
 "-----------Votantes---------
 "
-    nombre,cedula,salon,mesa
-    Santiago,1234,salon 1,mesa 1
-    Juliana,12345,salon 1,mesa 1
-    Marlo,123456,salon 2, mesa 1 
-    Monica,1234567,salon 2,mesa 4
-    oscar,12345678,salon 1,mesa 5
+Santiago,1234,1,1
+Juliana,12345,1,1
+Marlo,123456,2,1
+Monica,1234567,2,4
+oscar,12345678,1,5

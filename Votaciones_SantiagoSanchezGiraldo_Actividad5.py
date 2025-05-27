@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox 
 from tkinter import filedialog
 import csv 
-import matplotlib as mt
+import matplotlib.pyplot as plt
 import datetime as dt
 import pandas as pd 
 from tkinter import ttk
@@ -11,6 +11,99 @@ MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
 MainWindow.geometry("800x600") 
 #Hecho por Santiago Sanchez Giraldo
+#---------------Grafica de resultados--------------------
+def generar_graficos():
+    
+    #toplevel es una ventana emergente que se abre al hacer click en el boton de generar graficos
+    ventana_barras = tk.Toplevel(MainWindow)
+    ventana_barras.title("Gráfico de Resultados por Salón")
+    ventana_barras.geometry("800x600")
+    #Cuandro de texto para decir que se va a generar un grafico de barras
+    Label1 = tk.Label(ventana_barras, text="Gráfico de Resultados por Salón", font=("Arial", 16, "bold"))
+    Label1.pack(pady=10)
+    
+    def graficar_barras():
+         
+        try:
+        # 1. Carga de datos con verificación estricta
+            def cargar_datos_seguros(archivo):
+                #int64 identifica 
+                df = pd.read_csv(archivo, dtype={'salon': 'Int64'}, skipinitialspace=True)
+                if 'salon' not in df.columns:
+                    raise ValueError(f"Columna 'salon' no encontrada en {archivo}")
+                df['salon'] = pd.to_numeric(df['salon'], errors='coerce').dropna().astype('Int64')
+                return df
+
+            votantes_df = cargar_datos_seguros("votantes.csv")
+            jurados_df = cargar_datos_seguros("jurados.csv")
+            asistencia_df = cargar_datos_seguros("DatosAsistencia.csv")
+
+            # 2. Verificación visual (DEBUG)
+            print("\nDatos de votantes:")
+            print(votantes_df[['nombre', 'salon']].head())
+            print("\nDatos de asistencia:")
+            print(asistencia_df[['cedula', 'salon']].head())
+
+            # 3. Procesamiento a prueba de errores
+            datos_por_salon = pd.DataFrame({
+                'Jurados': jurados_df['salon'].value_counts().sort_index(),
+                'Votantes': votantes_df['salon'].value_counts().sort_index(),
+                'Asistencias': asistencia_df['salon'].value_counts().sort_index()
+            }).fillna(0).astype(int)
+
+            # 4. Generación del gráfico
+            if not datos_por_salon.empty:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                datos_por_salon.plot.bar(ax=ax, rot=0)
+            
+                ax.set_title('Estadísticas por Salón', pad=20)
+                ax.set_xlabel('Número de Salón')
+                ax.set_ylabel('Cantidad')
+                ax.legend(title='Categoría')
+                #tigh_layout es para que los graficos no se superpongan
+                plt.tight_layout()
+                plt.show()
+            else:
+             messagebox.showwarning("Advertencia", "No hay datos válidos para graficar")
+
+        except Exception as e:
+            messagebox.showerror("Error Crítico", 
+                f"Error en generación de gráficos:\n{str(e)}\n\n"
+                "Revise:\n"
+                "1. Que los archivos CSV tengan columna 'salon'\n"
+                "2. Que los valores de 'salon' sean números enteros\n"
+                "3. Que no haya filas corruptas en los datos")
+    def Grafica_Pastel():
+        
+        try:
+            jurados_df = pd.read_csv("jurados.csv")
+            JUROS_POR_MESA = 2  # Ajusta este valor según lo necesario
+        
+            conteo = jurados_df.groupby(['salon', 'mesa']).size()
+            mesas_completas = (conteo >= JUROS_POR_MESA).sum()
+            mesas_incompletas = len(conteo) - mesas_completas
+
+            plt.figure(figsize=(8, 6))
+            plt.pie([mesas_completas, mesas_incompletas],
+                labels=['Completas', 'Incompletas'],
+                autopct='%1.1f%%',
+                colors=['#4CAF50', '#F44336'],
+                startangle=90,
+                wedgeprops={'linewidth': 1, 'edgecolor': 'white'})
+        
+            plt.title(f'Mesas con Jurados Completos ({JUROS_POR_MESA}+ jurados)\nTotal mesas: {len(conteo)}')
+            plt.tight_layout()
+            plt.show()
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al generar gráfico:\n{str(e)}")
+            
+        
+            
+    boton_barraas = tk.Button(ventana_barras, text="Generar Gráfico de Barras", command=graficar_barras)
+    boton_barraas.pack(pady=10)
+    boton_pastel = tk.Button(ventana_barras, text="Generar Gráfico de Pastel", command=Grafica_Pastel)
+    boton_pastel.pack(pady=10)
 #---------------Resultado estadisticos--------------------
 def mostrar_estadisticas():
     jurados_df = pd.read_csv("jurados.csv")
@@ -87,7 +180,7 @@ def mostrar_estadisticas():
 
     mensaje += "\nAsistencia de Votantes por Salón:\n"
     for salon, total in votantes_por_salon.items():
-        mensaje += f" - Salón {salon}: {total} asistidos\n"
+        mensaje += f" - Salón {salon}: {total} asistieron\n"
     mensaje += "\nResumen de Resultados de Votación:\n"
     for pregunta, conteos in resumen_resultados.items():
         mensaje += f" - {pregunta}: Sí = {conteos['Sí']}, No = {conteos['No']}\n"
@@ -280,14 +373,15 @@ def cargar_votantes():
             #La f es para que el archivo se cierre automaticamente al terminar de usarlo y tambien para que no se guarde en la memoria, solo sea temporal
             lector = csv.reader(f)
             next(lector, None)
+            next(lector, None)  # Saltar las dos primeras líneas si son encabezados
             votantes.clear()
             for fila in lector:
                 if len(fila) >= 4:
                     votantes.append({
                         "nombre": fila[0],
                         "cedula": fila[1], 
-                        "salon":fila[2],  
-                        "mesa":  fila[3]  # Se asume que columna 4 indica número de mesa
+                        "salon":int(fila[2]),  # Se asume que columna 3 indica número de salón
+                        "mesa": int(fila[3])  # Se asume que columna 4 indica número de mesa
                     })
         messagebox.showinfo("Carga exitosa", "Votantes cargados correctamente.")
 
@@ -360,25 +454,29 @@ BotonResultadosPreguntas.grid(row=8, column=0, columnspan=2, pady=10)
 BotonResultadoEstadisticos = tk.Button(MainWindow, text="Mostrar Estadísticas",command=mostrar_estadisticas, font=("Arial", 10, "bold"), width=25)
 BotonResultadoEstadisticos.grid(row=9, column=0, columnspan=2, pady=10)
 
+# ------ Botón para graficar resultados -------------------
+boton_graficos = tk.Button(MainWindow, text="Generar Gráficos", command=generar_graficos,font=("Arial", 10, "bold"), width=25)
+boton_graficos.grid(row=10,column=0, columnspan=2, pady=10)
+
 # ------ Buscar Jurado por cédula -------------------eeeeeee
 LabelBuscarJurado = tk.Label(MainWindow, text="Buscar Jurado por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarJurado.grid(row=10, column=0, sticky='e', padx=10, pady=5)    
+LabelBuscarJurado.grid(row=11, column=0, sticky='e', padx=10, pady=5)    
 
 EntryBuscarJurado = tk.Entry(MainWindow)
-EntryBuscarJurado.grid(row=10, column=1, padx=5, pady=5)
+EntryBuscarJurado.grid(row=11, column=1, padx=5, pady=5)
 
 BotonBuscarJurado = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_jurado, width=10)
-BotonBuscarJurado.grid(row=10, column=2, padx=5, pady=5)
+BotonBuscarJurado.grid(row=11, column=2, padx=5, pady=5)
 
 # ------ Buscar Votante por cédula -------------------
 LabelBuscarVotante = tk.Label(MainWindow, text="Buscar Votante por Cédula:", font=("Arial", 10, "bold"))
-LabelBuscarVotante.grid(row=11, column=0, sticky='e', padx=10, pady=5)
+LabelBuscarVotante.grid(row=12, column=0, sticky='e', padx=10, pady=5)
 
 EntryBuscarVotante = tk.Entry(MainWindow)
-EntryBuscarVotante.grid(row=11, column=1, padx=5, pady=5)
+EntryBuscarVotante.grid(row=12, column=1, padx=5, pady=5)
 
 BotonBuscarVotante = tk.Button(MainWindow, text="Buscar", font=("Arial", 10, "bold"), command=buscar_votante, width=10)
-BotonBuscarVotante.grid(row=11, column=2, padx=5, pady=5)
+BotonBuscarVotante.grid(row=12, column=2, padx=5, pady=5)
 
 
 # ------------------ Lista de listas para guardar jurados por mesa ------------------
@@ -400,31 +498,28 @@ def mostrar_datos_jurados(indice_mesa):
 
     # Calcular el salón y número de mesa real
     total_mesas = int(entry_mesas.get())
-    #salon_num es el número del salón y mesa_num es el número de la mesa
-    #indice_mesa es el índice de la mesa en la lista jurados_por_mesa
-   
     salon_num = (indice_mesa // total_mesas) + 1
-    mesa_num = (indice_mesa % total_mesas) + 1  #total_mesas es el número total de mesas por salón
+    mesa_num = (indice_mesa % total_mesas) + 1
 
-    SalidaTexto = ""
+    texto_salida = "=== JURADOS ===\n"
 
     for i, jurado in enumerate(jurados):
-        SalidaTexto += f"Jurado #{i+1}:\nNombre: {jurado[0]}\nCédula: {jurado[1]}\nTeléfono: {jurado[2]}\nDirección: {jurado[3]}\n\n"
+        texto_salida += f"Jurado #{i+1}:\nNombre: {jurado[0]}\nCédula: {jurado[1]}\nTeléfono: {jurado[2]}\nDirección: {jurado[3]}\n\n"
 
-    nombre_mesa = f"mesa {mesa_num}"
-    # Filtrar votantes por mesa Y salón
-    votantes_en_mesa = [v for v in votantes 
-                        if v["mesa"].strip().lower() == nombre_mesa 
-                        and v["salon"].strip().lower() == f"salon {salon_num}"]
+    # Filtrar votantes por mesa Y salón (CORRECCIÓN IMPORTANTE AQUÍ)
+    votantes_en_mesa = [
+        v for v in votantes 
+        if v["mesa"] == mesa_num and v["salon"] == salon_num
+    ]
 
+    texto_salida += "=== VOTANTES ===\n"
     if not votantes_en_mesa:
-        SalidaTexto += "--- No hay votantes asignados a esta mesa ---"
+        texto_salida += "No hay votantes asignados a esta mesa.\n"
     else:
-        SalidaTexto += "--- Votantes ---\n"
         for v in votantes_en_mesa:
-            SalidaTexto += f"Nombre: {v['nombre']}\nCédula: {v['cedula']}\n\n"
+            texto_salida += f"Nombre: {v['nombre']}\nCédula: {v['cedula']}\n\n"
 
-    messagebox.showinfo(f"Datos del Salón {salon_num} - Mesa {mesa_num}", SalidaTexto)
+    messagebox.showinfo(f"Datos del Salón {salon_num} - Mesa {mesa_num}", texto_salida)
 
 # ------------------ Función para guardar datos del jurado ------------------
 Datos_Jurado = []  # Lista para guardar los datos del jurado
@@ -526,12 +621,12 @@ def generar_votacion():
 
             #mesa muestra solos sus jurados
             #index es para guardar el indice de la mesa
-            btn_mesa = tk.Button(frame_mesa, text=f"Mesa {m+1}", width=10, command=lambda index=indice_mesa_global: mostrar_datos_jurados(index))
+            btn_mesa = tk.Button(frame_mesa, text=f"Mesa {m+1}", width=10, command=lambda idx=indice_mesa_global: mostrar_datos_jurados(idx))
             btn_mesa.pack(side="left", padx=5)
 
             for j in range(total_jurados):
                 # boton para abrir el formulario del jurado cuando le de a la mesa
-                btn_jurado = tk.Button(frame_mesa, text=f"Jurado {j+1}", width=10, command=lambda index=indice_mesa_global: formulario_Jurado(index))
+                btn_jurado = tk.Button(frame_mesa, text=f"Jurado {j+1}", width=10, command=lambda idx=indice_mesa_global: formulario_Jurado(idx))
                 btn_jurado.pack(side="left", padx=2)
 
             indice_mesa_global += 1  # aumentamos el indice de la mesa
