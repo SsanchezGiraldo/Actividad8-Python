@@ -5,6 +5,7 @@ import csv
 import matplotlib as mt
 import datetime as dt
 import pandas as pd 
+from tkinter import ttk
 
 MainWindow = tk.Tk()
 MainWindow.title("Votaciones")
@@ -14,9 +15,85 @@ MainWindow.geometry("800x600")
 def mostrar_estadisticas():
     jurados_df = pd.read_csv("jurados.csv")
     votantes_df = pd.read_csv("votantes.csv")
-    asistencia_df = pd.read_csv("DatosAsistencia.csv", header=None)
+    asistencia_df = pd.read_csv("DatosAsistencia.csv")
     resultados_df = pd.read_csv("ArchivoResultados.csv")  
     
+     # Normalizar columnas
+    jurados_df.columns = jurados_df.columns.str.strip().str.lower()
+    votantes_df.columns = votantes_df.columns.str.strip().str.lower()
+
+    # Limpiar y convertir tipos
+    jurados_df['salon'] = jurados_df['salon'].astype(str).str.strip()
+    votantes_df['salon'] = votantes_df['salon'].astype(str).str.replace("salon", "").str.strip()
+
+    # Total de jurados por salón
+    jurados_por_salon = jurados_df.groupby("salon").size()
+
+    # Total de votantes por salón
+    votantes_por_salon = votantes_df.groupby("salon").size()
+
+    # Porcentaje de mesas completas
+    total_mesas = 21  # Puedes calcular esto dinámicamente si lo deseas
+    mesas_con_jurados = jurados_df.drop_duplicates(subset=["salon", "mesa"]).shape[0]
+    porcentaje_mesas = (mesas_con_jurados / total_mesas) * 100 if total_mesas > 0 else 0
+    # Número de jurados por mesa
+    jurados_por_mesa = jurados_df.groupby(["salon", "mesa"]).size()
+
+    # Limpiar datos si es necesario
+   
+
+    # Asegurar que las columnas estén limpias
+    # Limpiar nombres de columnas y datos
+    asistencia_df.columns = asistencia_df.columns.str.strip().str.lower()
+    asistencia_df["salon"] = asistencia_df["salon"].fillna("").astype(str).str.strip()
+    asistencia_df["cedula"] = asistencia_df["cedula"].fillna("").astype(str).str.strip()
+
+    # Eliminar duplicados (una asistencia por cedula y salón)
+    asistencia_unicos = asistencia_df.drop_duplicates(subset=["cedula", "salon"])
+
+    # Limpiar nombres de columnas y datos
+    resultados_df.columns = resultados_df.columns.str.strip().str.lower()
+
+# Convertir todas las respuestas a minúsculas y quitar espacios
+    for col in resultados_df.columns:
+        if col.startswith("p"):
+            resultados_df[col] = resultados_df[col].astype(str).str.strip().str.lower()
+
+# Contar "sí" y "no" por cada pregunta
+    resumen_resultados = {}
+    for col in resultados_df.columns:
+     if col.startswith("p"):
+        si_count = (resultados_df[col] == "si").sum()
+        no_count = (resultados_df[col] == "no").sum()
+        resumen_resultados[col.upper()] = {"Sí": si_count, "No": no_count}
+# Contar asistentes únicos por salón
+    votantes_por_salon = asistencia_unicos.groupby("salon")["cedula"].count()
+    mensaje = "Resumen Estadístico:\n"
+
+    mensaje += "\nTotal de Jurados por Salón:\n"
+    for salon, total in jurados_por_salon.items():
+        mensaje += f" - Salón {salon}: {total}\n"
+
+    mensaje += "\nNúmero de Jurados por Mesa:\n"
+    for (salon, mesa), total in jurados_por_mesa.items():
+        mensaje += f" - Salón {salon}, Mesa {mesa}: {total} jurado(s)\n"
+
+    mensaje += "\nTotal de Votantes por Salón:\n"
+    for salon, total in votantes_por_salon.items():
+        mensaje += f" - Salón {salon}: {total}\n"
+
+    mensaje += "\nPorcentaje de Mesas Completas:\n"
+    mensaje += f" - {porcentaje_mesas:.2f}% ({mesas_con_jurados}/{total_mesas} mesas)\n"
+
+    mensaje += "\nAsistencia de Votantes por Salón:\n"
+    for salon, total in votantes_por_salon.items():
+        mensaje += f" - Salón {salon}: {total} asistidos\n"
+    mensaje += "\nResumen de Resultados de Votación:\n"
+    for pregunta, conteos in resumen_resultados.items():
+        mensaje += f" - {pregunta}: Sí = {conteos['Sí']}, No = {conteos['No']}\n"
+
+    # Mostrar en ventana emergente
+    messagebox.showinfo("Resumen Estadístico", mensaje)
 
 
 #---------------Resultados preguntas--------------------
