@@ -37,9 +37,25 @@ te va a crear:
 
 9. Al cerrar el boton, terminara de ejecutarse el programa.
 
+Programas utilizado en la realización del proyecto:
+  -Matplotlib
+  -pandas
+  1. Como instalarlo
+  2. Entra visual studio code
+  3. Ve a la consola
+  4. Digita lo siguiente para cada una y espera.
+     - pip install matplotlib
+     - pip install pandas
+  5. Espera que se te instale cada una, se demora dependiendo de la capacidad del internet y del dispositivo.
+  6. Cuando ya los tengas en el codigo tienes que importarlo, como se hace ? ya te explico.
+     - import matplotlib.pyplot as plt 
+     - import pandas as pd 
+  7. Listo, ya lo tienes instalado y libre de usar
 
 Documentación realizada por: 
 Santiago Sanchez Giraldo
+
+
 
 
   
