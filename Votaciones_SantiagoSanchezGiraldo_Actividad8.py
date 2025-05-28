@@ -29,6 +29,7 @@ def generar_graficos():
             def cargar_datos_seguros(archivo):
                 #int64 identifica 
                 df = pd.read_csv(archivo, dtype={'salon': 'Int64'}, skipinitialspace=True)
+                #El uso de raise es para detener la ejecución si no se encuentra la columna salon
                 if 'salon' not in df.columns:
                     raise ValueError(f"Columna 'salon' no encontrada en {archivo}")
                 df['salon'] = pd.to_numeric(df['salon'], errors='coerce').dropna().astype('Int64')
@@ -38,13 +39,12 @@ def generar_graficos():
             jurados_df = cargar_datos_seguros("jurados.csv")
             asistencia_df = cargar_datos_seguros("DatosAsistencia.csv")
 
-            # 2. Verificación visual (DEBUG)
-            print("\nDatos de votantes:")
-            print(votantes_df[['nombre', 'salon']].head())
-            print("\nDatos de asistencia:")
-            print(asistencia_df[['cedula', 'salon']].head())
+            # 2. -----------------------Verificación visual (DEBUG)-----------------------
+            #print(votantes_df[['nombre', 'salon']].head())
+            #print("\nDatos de asistencia:")
+            #print(asistencia_df[['cedula', 'salon']].head())
 
-            # 3. Procesamiento a prueba de errores
+            # 3. Procesamiento a prueba de errores, si en el caso de que no se encuentren los datos, se mostrara un mensaje de error
             datos_por_salon = pd.DataFrame({
                 'Jurados': jurados_df['salon'].value_counts().sort_index(),
                 'Votantes': votantes_df['salon'].value_counts().sort_index(),
@@ -76,7 +76,7 @@ def generar_graficos():
     def Grafica_Pastel():
         
         try:
-            JUROS_POR_MESA = int(entry_jurados.get())
+            JURADOS_POR_MESA = int(entry_jurados.get())
         
             # 1. Leer datos y asegurar columnas
             jurados_df = pd.read_csv("jurados.csv")
@@ -90,14 +90,14 @@ def generar_graficos():
             conteo_jurados = jurados_df.groupby(['salon', 'mesa']).size()
         
             # 4. Clasificación precisa
-            mesas_completas = sum(conteo_jurados >= JUROS_POR_MESA)
+            mesas_completas = sum(conteo_jurados >= JURADOS_POR_MESA)
             mesas_incompletas = total_mesas - mesas_completas  # Incluye mesas sin jurados
 
             # 5. Validación
             if total_mesas == 0:
                 raise ValueError("No hay mesas configuradas")
 
-            # 6. Gráfico mejorado
+            # 6. Gráfico mejorado donde se arregla el tamño del grafico
             plt.figure(figsize=(10, 6))
         
             # Solo mostrar porcentajes si hay datos
@@ -119,7 +119,7 @@ def generar_graficos():
         
             plt.title(
                 f'Estado de Mesas en {int(entry_salon.get())} Salones\n'
-                f'(Requieren {JUROS_POR_MESA}+ jurados)\n'
+                f'(Requieren {JURADOS_POR_MESA}+ jurados)\n'
                 f'Total mesas: {total_mesas}',
                 pad=20
             )
@@ -138,6 +138,7 @@ def generar_graficos():
             try:
                 asistencia = pd.read_csv("DatosAsistencia.csv")
                 cedulas_asistentes = set(asistencia['cedula'].astype(str).str.strip())
+            #El except en el caso que no encuentre el encabezado y los datos, saca un erro y pone la lista en un conjunto y sigue el programa.
             except FileNotFoundError:
                 cedulas_asistentes = set()
 
@@ -160,9 +161,12 @@ def generar_graficos():
                 [asistentes, no_asistentes],
                 labels=[f'Asistieron\n{asistentes}', f'No asistieron\n{no_asistentes}'],
                 autopct=lambda p: f'{p:.1f}%' if p > 0 else '',
+                #autopct es para que el grafico de pastel muestre los porcentajes con un decimal
                 colors=['#00b894', '#ff7675'],  # Verde/Rojo 
                 startangle=90,
+                #startangle es para que el grafico de pastel empiece desde el norte
                 wedgeprops={'linewidth': 1, 'edgecolor': 'white'}
+                #wedgeprops es para que el grafico de pastel tenga un borde blanco
             )
 
             plt.title(f'Asistencia de Votantes\nTotal padrón: {total}')
@@ -171,6 +175,7 @@ def generar_graficos():
 
         except Exception as e:
             messagebox.showerror("Error", f"Error al generar gráfico:\n{str(e)}")
+            
     def Grafica_Barras_Preguntas():
         try:
             # 1. Cargar y limpiar datos
@@ -182,11 +187,13 @@ def generar_graficos():
             # Filtrar columnas de preguntas (p1, p2...)
             preguntas = [col for col in resultados.columns if col.startswith('p')]
 
+            # El uso de raise es para detener la ejecución si no se encuentran preguntas   
             if not preguntas:
                 raise ValueError("No se encontraron columnas de preguntas (p1, p2...)")
 
             # 2. Normalizar respuestas
             mapeo_respuestas = {
+                #Aqui si en el caso de que en el archivo tenga un valor diferente a "si" o "no", se reemplazara por "si" o "no"
                 'si': 'sí', 's': 'sí', 'yes': 'sí',
                 'no': 'no', 'n': 'no'
             }
@@ -201,8 +208,10 @@ def generar_graficos():
                 )
             
                 # Verificar valores válidos
+                #isin es para quue los 
                 if not resultados[pregunta].isin(['sí', 'no']).all():
                     invalidos = resultados[~resultados[pregunta].isin(['sí', 'no'])][pregunta].unique()
+                    #raise ValueError es para detener la ejecución si hay valores inválidos
                     raise ValueError(
                         f"Valores inválidos en {pregunta}: {invalidos}\n"
                         f"Solo se permiten 'sí' o 'no'"
@@ -217,11 +226,14 @@ def generar_graficos():
                 # Calcular porcentajes
                 stats = (
                     resultados.groupby('mesa')[pregunta]
+                #.value_counts(normalize=True) es para que los datos se muestren en porcentajes
                     .value_counts(normalize=True)
+                #.unstack() es para que los datos se muestren en columnas
                     .unstack()
+                #.reindex es para que los datos se muestren en el orden correcto
                     .reindex(columns=['sí', 'no'], fill_value=0) * 100
                 )
-            
+
                 # Gráfico
                 stats.plot.barh(
                     stacked=True,
@@ -232,6 +244,10 @@ def generar_graficos():
             
                 ax.set_title(f'Pregunta {pregunta.upper()}', fontsize=10)
                 ax.set_xlim(0, 100)
+                #if i == 0 es para que solo se muestre la leyenda en el primer grafico
+                #ax.legend es para que se muestre la leyenda en el grafico
+                #leyenda es para que el grafico tenga una leyenda
+                #una leyenda es una lista de etiquetas que se muestran en el grafico
                 if i == 0:
                     ax.legend(['Sí', 'No'], fontsize=8)
 
@@ -271,15 +287,19 @@ def mostrar_estadisticas():
 
     # Total de votantes por salón
     votantes_por_salon = votantes_df.groupby("salon").size()
-
+    
+    if not entry_mesas.get():
+        messagebox.showerror("Error", "Por favor, ingrese el número de mesas.")
+        return
+    
     # Porcentaje de mesas completas
-    total_mesas = 21  # Puedes calcular esto dinámicamente si lo deseas
+    total_mesas = int(entry_mesas.get())
     mesas_con_jurados = jurados_df.drop_duplicates(subset=["salon", "mesa"]).shape[0]
     porcentaje_mesas = (mesas_con_jurados / total_mesas) * 100 if total_mesas > 0 else 0
     # Número de jurados por mesa
     jurados_por_mesa = jurados_df.groupby(["salon", "mesa"]).size()
 
-    # Limpiar datos si es necesario
+    
    
 
     # Asegurar que las columnas estén limpias
@@ -298,6 +318,7 @@ def mostrar_estadisticas():
     for col in resultados_df.columns:
         if col.startswith("p"):
             resultados_df[col] = resultados_df[col].astype(str).str.strip().str.lower()
+      
 
 # Contar "sí" y "no" por cada pregunta
     resumen_resultados = {}
@@ -321,7 +342,7 @@ def mostrar_estadisticas():
     mensaje += "\nTotal de Votantes por Salón:\n"
     for salon, total in votantes_por_salon.items():
         mensaje += f" - Salón {salon}: {total}\n"
-
+    #.2f es para sacar el porcentaje con dos decimales
     mensaje += "\nPorcentaje de Mesas Completas:\n"
     mensaje += f" - {porcentaje_mesas:.2f}% ({mesas_con_jurados}/{total_mesas} mesas)\n"
 
@@ -547,7 +568,13 @@ def buscar_votante():
       
     if cedula =="":
         messagebox.showerror("Error", "Por favor, ingrese una cédula o valor numerico.")
-
+    if not votantes:
+        messagebox.showerror("Error", 
+            "No hay votantes registrados.\n\n"
+            "Por favor:\n"
+            "1. Genere los salones y mesas\n"
+            "2. Suba los votantes en el boton Cargar Datos votantes antes de continuar")
+        return
     if not votante in votantes:
         # Si la cédula no se encuentra en la lista de votantes
         messagebox.showerror("Error", "No existe ningún votante con la cédula ingresada.")
@@ -561,6 +588,13 @@ def buscar_jurado():
         messagebox.showerror("Error", "Por favor, ingrese la cédula del jurado.")
         return  # Para que no siga ejecutándose
     
+    if not Datos_Jurado:
+        messagebox.showerror("Error", 
+            "No hay jurados registrados.\n\n"
+            "Por favor:\n"
+            "1. Genere los salones y mesas\n"
+            "2. Agregue jurados usando los formularios")
+        return
     # Buscar jurado con esa cédula
     for jurado in Datos_Jurado:
         if jurado[1] == cedulajurado:
@@ -569,6 +603,7 @@ def buscar_jurado():
                 f"Nombre: {jurado[0]}\nCédula: {jurado[1]}\nSalón: {jurado[4]}\nMesa: {jurado[5]}"
             )
             return
+    
     if not jurado in Datos_Jurado:
         # Si la cédula no se encuentra en la lista de jurados
         messagebox.showerror("Error", "No existe ningún jurado con la cédula ingresada.")
@@ -581,9 +616,6 @@ def buscar_jurado():
 BotonGuardarCentro = tk.Button(MainWindow, text="Guardar centro de votacion", font=("Arial", 10, "bold"), command=guardaDatosVotaciones, width=25)
 BotonGuardarCentro.grid(row=4, column=0, columnspan=2, pady=10)
 
-# ------ Cargar Centro de votación -------------------
-BotonCargarVotacion = tk.Button(MainWindow, text="Cargar Centro de votacion", font=("Arial", 10, "bold"), width=25)
-BotonCargarVotacion.grid(row=5, column=0, columnspan=2, pady=10)
 
 # ------ Cargar los datos de los votantes -------------------
 BotonCargarVotantes = tk.Button(MainWindow, text="Cargar Datos votantes", font=("Arial", 10, "bold"), command=cargar_votantes, width=25)
@@ -649,7 +681,7 @@ def mostrar_datos_jurados(indice_mesa):
     mesa_num = (indice_mesa % total_mesas) + 1
 
     texto_salida = "=== JURADOS ===\n"
-
+    #Enumarate es para que vaya contando los jurados desde 1
     for i, jurado in enumerate(jurados):
         texto_salida += f"Jurado #{i+1}:\nNombre: {jurado[0]}\nCédula: {jurado[1]}\nTeléfono: {jurado[2]}\nDirección: {jurado[3]}\n\n"
 
