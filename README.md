@@ -53,7 +53,9 @@ Programas utilizado en la realización del proyecto:
   7. Listo, ya lo tienes instalado y libre de usar
 
 Documentación realizada por: 
+
 Santiago Sanchez Giraldo
+-
 
 
 
