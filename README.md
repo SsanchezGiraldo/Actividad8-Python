@@ -21,7 +21,7 @@ mesa, se le mostrar la informacion de los jurados y votantes que estaran en la m
 6. Cuando tengas el paso anteriormente hecho, tendras que hacer la asistencias de los votantes, en el boton llamado:
    
   "Formulario de asistencia", tendras que digitar las cedula de cada uno, mostrará un error, si la cedula no este en el
-    archivo cargado de "Voters.csv".
+    archivo cargado de "Voters.csv", y va generar tambien un archivos llamado "DatosAsistencia.csv
 
 7. Cuando tengas todos los pasos anteriormente terminados, Oprime el boton llamado " Guardar Centro de votacion", en la cual este
 te va a crear:
